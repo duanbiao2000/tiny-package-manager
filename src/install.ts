@@ -1,16 +1,16 @@
-import * as fs from 'fs-extra'
-import * as tar from 'tar'
-import { request } from 'undici'
-import * as log from './log'
+import * as fs from "fs-extra";
+import * as tar from "tar";
+import { request } from "undici";
+import * as log from "./log";
 
-export default async function(name: string, url: string, location = '') {
+export default async function (name: string, url: string, location = "") {
   // Prepare for the directory which is for installation
-  const path = `${process.cwd()}${location}/node_modules/${name}`
+  const path = `${process.cwd()}${location}/node_modules/${name}`;
 
   // Create directories recursively.
-  await fs.mkdirp(path)
+  await fs.mkdirp(path);
 
-  const response = await request(url)
+  const response = await request(url);
   /*
    * The response body is a readable stream
    * and the `tar.extract` accepts a readable stream,
@@ -18,6 +18,6 @@ export default async function(name: string, url: string, location = '') {
    * and just extract the stuff directly.
    */
   response.body
-    ?.pipe(tar.extract({ cwd: path, strip: 1 }))
-    .on('close', log.tickInstalling) // Update the progress bar
+    ?.pipe(tar.extract({ cwd: path, strip: 1 })) // 解压response.body到path目录，去掉第一层目录
+    .on("close", log.tickInstalling); // Update the progress bar
 }

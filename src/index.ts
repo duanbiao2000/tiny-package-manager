@@ -1,11 +1,11 @@
-import findUp from 'find-up'
-import * as fs from 'fs-extra'
-import type yargs from 'yargs'
-import install from './install'
-import list, { PackageJson } from './list'
-import * as lock from './lock'
-import * as log from './log'
-import * as utils from './utils'
+import findUp from "find-up";
+import * as fs from "fs-extra";
+import type yargs from "yargs";
+import install from "./install";
+import list, { PackageJson } from "./list";
+import * as lock from "./lock";
+import * as log from "./log";
+import * as utils from "./utils";
 
 /**
  * Welcome to learning about how to build a package manager.
@@ -31,32 +31,35 @@ import * as utils from './utils'
  * because I split them into different modules and files for better management.
  */
 
-export default async function(args: yargs.Arguments) {
+export default async function (args: yargs.Arguments) {
   // Find and read the `package.json`.
-  const jsonPath = (await findUp('package.json'))!
-  const root = await fs.readJson(jsonPath)
+  // 定义一个常量jsonPath，用于存储package.json文件的路径
+  const jsonPath = (await findUp("package.json"))!;
+  // 读取json文件
+  const root = await fs.readJson(jsonPath);
 
   /*
    * If we are adding new packages by running `tiny-pm install <packageName>`,
    * collect them through CLI arguments.
    * This purpose is to behaves like `npm i <packageName>` or `yarn add`.
    */
-  const additionalPackages = args._.slice(1)
+  // 从命令行参数中获取除第一个参数外的所有参数
+  const additionalPackages = args._.slice(1);
   if (additionalPackages.length) {
-    if (args['save-dev'] || args.dev) {
-      root.devDependencies = root.devDependencies || {}
+    if (args["save-dev"] || args.dev) {
+      root.devDependencies = root.devDependencies || {};
       /*
        * At this time we don't specific version now, so set it empty.
        * And we will fill it later after fetched the information.
        */
-      additionalPackages.forEach((pkg) => (root.devDependencies[pkg] = ''))
+      additionalPackages.forEach((pkg) => (root.devDependencies[pkg] = ""));
     } else {
-      root.dependencies = root.dependencies || {}
+      root.dependencies = root.dependencies || {};
       /*
        * At this time we don't specific version now, so set it empty.
        * And we will fill it later after fetched the information.
        */
-      additionalPackages.forEach((pkg) => (root.dependencies[pkg] = ''))
+      additionalPackages.forEach((pkg) => (root.dependencies[pkg] = ""));
     }
   }
 
@@ -65,17 +68,17 @@ export default async function(args: yargs.Arguments) {
    * we just need to resolve production dependencies.
    */
   if (args.production) {
-    delete root.devDependencies
+    delete root.devDependencies;
   }
 
   // Read the lock file
-  await lock.readLock()
+  await lock.readLock();
 
   // Generate the dependencies information.
-  const info = await list(root)
+  const info = await list(root);
 
   // Save the lock file asynchronously.
-  lock.writeLock()
+  lock.writeLock();
 
   /*
    * Prepare for the progress bar.
@@ -86,22 +89,24 @@ export default async function(args: yargs.Arguments) {
    */
   log.prepareInstall(
     Object.keys(info.topLevel).length + info.unsatisfied.length
-  )
+  );
 
   // Install top level packages.
   await Promise.all(
     Object.entries(info.topLevel).map(([name, { url }]) => install(name, url))
-  )
+  );
 
   // Install packages which have conflicts.
   await Promise.all(
-    info.unsatisfied.map((item) => install(item.name, item.url, `/node_modules/${item.parent}`))
-  )
+    info.unsatisfied.map((item) =>
+      install(item.name, item.url, `/node_modules/${item.parent}`)
+    )
+  );
 
-  beautifyPackageJson(root)
+  beautifyPackageJson(root);
 
   // Save the `package.json` file.
-  fs.writeJson(jsonPath, root, { spaces: 2 })
+  fs.writeJson(jsonPath, root, { spaces: 2 });
 
   // That's all! Everything should be finished if no errors occurred.
 }
@@ -111,10 +116,10 @@ export default async function(args: yargs.Arguments) {
  */
 function beautifyPackageJson(packageJson: PackageJson) {
   if (packageJson.dependencies) {
-    packageJson.dependencies = utils.sortKeys(packageJson.dependencies)
+    packageJson.dependencies = utils.sortKeys(packageJson.dependencies);
   }
 
   if (packageJson.devDependencies) {
-    packageJson.devDependencies = utils.sortKeys(packageJson.devDependencies)
+    packageJson.devDependencies = utils.sortKeys(packageJson.devDependencies);
   }
 }
